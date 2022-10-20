@@ -8,15 +8,18 @@ import json
 import random
 import numpy as np
 import torch
+import gc
 
 def save_episode_data_json(episode, durations, scores):
     data = {"episode": episode, "durations": durations, "scores": scores}
+    print("Saving episode data to json file")
     filename = "tmp/episode_data_dict.json"
     with open(filename, 'w') as f:
         json.dump(data, f)
 
 def load_episode_data_json():
     filename = "tmp/episode_data_dict.json"
+    print("Loading episode data from json file")
     with open(filename, 'r') as f:
         data = json.load(f)
     return data
@@ -45,7 +48,7 @@ score_history = episode_data["scores"]
 episode_history = episode_data["durations"]
 
 # print the device
-print(f"### --- device: {agent.actor.device} --- ###")
+print(f"device: {agent.actor.device}")
 
 for i in range(episode, 1000):
     EPSILON = 0.95
@@ -71,9 +74,6 @@ for i in range(episode, 1000):
         agent.learn()
         score += reward
         obs = new_state
-        plt.imshow(obs)
-        plt.title(f'Stateus: Done.  Episode: {i} steps: {t}')
-        plt.savefig(f'tmp/solved_envs/episode_{i}.png')
         if t%100 == 0:
             x_amount = act[0][0]*env.fixed_image.size[0]
             y_amount = act[0][1]*env.fixed_image.size[1]
@@ -89,9 +89,6 @@ for i in range(episode, 1000):
         #env.render()
     score_history.append(score)
     episode_history.append(t)
-    plt.imshow(obs)
-    plt.title(f'Stateus: Done.  Episode: {i} steps: {t}')
-    plt.savefig(f'tmp/solved_envs/episode_{i}.png')
 
     # plot and save the score
     plt.plot(episode_history)

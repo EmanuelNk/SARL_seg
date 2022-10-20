@@ -187,7 +187,7 @@ class ActorNetwork(nn.Module):
         #self.mu.bias.data.uniform_(-f3, f3)
 
         self.optimizer = optim.Adam(self.parameters(), lr=alpha)
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cuda:1')
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cu1a:0')
 
         self.to(self.device)
 
