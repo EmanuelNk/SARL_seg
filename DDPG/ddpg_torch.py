@@ -7,6 +7,7 @@ from torchvision.transforms import Compose, Resize, ToTensor
 import numpy as np
 import torchvision.transforms as T
 from PIL import Image, ImageOps
+import pickle
 
 # resize = Compose([torch.ToPILImage(),
 #                     torch.Resize(112, interpolation=Image.CUBIC),
@@ -251,17 +252,35 @@ class Agent(object):
     
     
 
-    def choose_action(self, observation):
+    def choose_action(self, observation, add_noise=True):
         self.actor.eval()
         observation = transform_obs(observation)
         
         # observation = torch.tensor(observation, dtype=torch.float).to(self.actor.device)
         mu = self.actor.forward(observation.to(self.actor.device)).to(self.actor.device)
-        mu_prime = mu + torch.tensor(self.noise(),
-                                 dtype=torch.float).to(self.actor.device)
+        if add_noise:
+            mu_prime = mu + torch.tensor(self.noise(), dtype=torch.float).to(self.actor.device)
+        else:
+            mu_prime = mu
+            
         self.actor.train()
         return mu_prime.cpu().detach().numpy()
 
+    def save_memory(self):
+        memory = self.memory
+        # save to file 
+        with open('memory.pkl', 'wb') as f:
+            pickle.dump(memory, f)
+    
+    def load_memory(self):
+        # check if file exists
+        if not os.path.isfile('memory.pkl'):
+            print('memory.pkl not found')
+            return
+        # load from file
+        with open('memory.pkl', 'rb') as f:
+            memory = pickle.load(f)
+        self.memory = memory
 
     def remember(self, state, action, reward, new_state, done):
         self.memory.store_transition(state, action, reward, new_state, done)

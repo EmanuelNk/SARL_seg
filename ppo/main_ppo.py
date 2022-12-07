@@ -6,6 +6,7 @@ from utils import *
 from ppo_env import *
 
 if __name__ == '__main__':
+    envs = preprocess_data('/home/dsi/enafcha/SARL_seg/coffee', display=False)
     env = random.choice(envs)
     N = 20
     batch_size = 5

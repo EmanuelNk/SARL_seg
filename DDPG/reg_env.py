@@ -5,7 +5,7 @@ from PIL import Image, ImageOps
 from torchvision.transforms import Compose, Resize, ToTensor
 # import cv2 as cv
 from collections import deque
-
+import json
 import torch.optim as optim
 import torch
 import torch.nn.functional as F
@@ -195,18 +195,49 @@ class Env:
         else:
             return new_im, (reward+bonus), False
 
-def preprocess_data(path, display=True):
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', autosize = False):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        autosize    - Optional  : automatically resize the length of the progress bar to the terminal window (Bool)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    styling = '%s |%s| %s%% %s' % (prefix, fill, percent, suffix)
+    if autosize:
+        cols, _ = shutil.get_terminal_size(fallback = (length, 1))
+        length = cols - len(styling)
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print('\r%s' % styling.replace(fill, bar), end = '\r')
+    # Print New Line on Complete
+    if iteration == total: 
+        print()
+
+def preprocess_data(path, display=False):
     h_shift = 0
     s_shift = 0
     v_shift = 0
     envs = []
+    envs_info = {}
     for i, filename in enumerate(os.listdir(path)):
-        if filename.endswith(".jpg"):
-            if i == 100:
-                break
+        if filename.endswith(".jpg") or filename.endswith(".JPEG"):
             im = Image.open('/'.join([path, filename]))
             im_shape = im.size
+            # check if image has 3 channels
+            if len(im.getbands()) < 3:
+                # print(f"Image {filename} has less than 3 channels")
+                continue
+            # add progress bar
+            printProgressBar(i, len(os.listdir(path)), prefix='Prepearing envs:', suffix='Complete', length=100)
             if im_shape[0] >= 112 and im_shape[1] >= 112:
+                
                 im_scale_x = im_shape[0]/112
                 im_scale_y = im_shape[1]/112
 
@@ -216,12 +247,16 @@ def preprocess_data(path, display=True):
                 im = im.crop((0, 0, 112, 112))
                 im_shape = im.size
                 cropped_dims = [37, 37]
+                # add noise to cropped dims
+                crop_noise = np.random.randint(0, 15)
+                cropped_dims[0] += crop_noise
+                cropped_dims[1] += crop_noise
                 crop_attr = generate_cropped_im(im, cropped_dims)
                 cropped_im = crop_attr['cropped_im']
                 # change cropped image hue
                 cropped_im = cropped_im.convert('HSV')
                 cropped_im_shape = crop_attr['cropped_im_shape']
-                print(f'im_shape: {im_shape}, cropped_im_shape: {cropped_im_shape}')
+                # print(f'im_shape: {im_shape}, cropped_im_shape: {cropped_im_shape}')
                 crop_coords = crop_attr['crop_coords']
 
                 # red_dot = Image.new('RGB', (10, 10), color = 'red')
@@ -242,7 +277,8 @@ def preprocess_data(path, display=True):
                 # env_im.paste(green_dot, (fixed_x, fixed_y))
                 env = Env(im, cropped_im, crop_coords)
                 envs.append(env)
-                print(f'image: {path},  distance: {distance}')
+                # print(f'image: {path},  distance: {distance}')
+                envs_info[filename] = {'path': path, 'distance': distance, 'crop_dims': cropped_dims, 'crop_coords': crop_coords}
                 im2 = im.copy()
                 if display:
                     plt.imshow(im2)
@@ -254,4 +290,9 @@ def preprocess_data(path, display=True):
                 x = transform(im)
                 x = x.unsqueeze(0) # add batch dim
                 x.shape
+                # save envs info to file
+                with open('tmp/envs_info.json', 'w') as f:
+                    json.dump(envs_info, f)
+
+
     return envs
