@@ -225,7 +225,8 @@ def transform_obs(observation):
 class Agent(object):
     def __init__(self, alpha, beta, input_dims, tau, gamma=0.99,
                  n_actions=2, max_size=10000, layer1_size=400,
-                 layer2_size=300, batch_size=64):
+                 layer2_size=300, batch_size=64, chkpt_dir='tmp/ddpg'):
+        self.chkpt_dir = chkpt_dir
         self.gamma = gamma
         self.tau = tau
         self.memory = ReplayBuffer(max_size, input_dims, n_actions)
@@ -233,17 +234,17 @@ class Agent(object):
 
         self.actor = ActorNetwork(alpha, input_dims, layer1_size,
                                   layer2_size, n_actions=n_actions,
-                                  name='Actor')
+                                  name='Actor', chkpt_dir=self.chkpt_dir)
         self.critic = CriticNetwork(beta, input_dims, layer1_size,
                                     layer2_size, n_actions=n_actions,
-                                    name='Critic')
+                                    name='Critic', chkpt_dir=self.chkpt_dir)
 
         self.target_actor = ActorNetwork(alpha, input_dims, layer1_size,
                                          layer2_size, n_actions=n_actions,
-                                         name='TargetActor')
+                                         name='TargetActor', chkpt_dir=self.chkpt_dir)
         self.target_critic = CriticNetwork(beta, input_dims, layer1_size,
                                            layer2_size, n_actions=n_actions,
-                                           name='TargetCritic')
+                                           name='TargetCritic', chkpt_dir=self.chkpt_dir)
 
         self.noise = OUActionNoise(mu=np.zeros(n_actions))
 

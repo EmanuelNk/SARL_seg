@@ -29,12 +29,14 @@ def load_episode_data_json():
 EPSILON = 0.95
 EPSILON_DECAY = 0.9975
 EPSILON_MIN = 0.15
+CHKPT_DIR = 'tmp/Backups/4310'
+DATASET = 'test_pictures'
 
 torch.cuda.empty_cache()
 
-envs = preprocess_data('1000_random', display=False)
+envs = preprocess_data(DATASET, display=False)
 env = envs[0]
-agent = Agent(alpha=0.000025, beta=0.00025, max_size=100000, input_dims=[3,112,112], tau=0.001,
+agent = Agent(chkpt_dir=CHKPT_DIR, alpha=0.000025, beta=0.00025, max_size=100000, input_dims=[3,112,112], tau=0.001,
               batch_size=64,  layer1_size=400, layer2_size=300, n_actions=2)
 
 # agent.load_models()
@@ -140,9 +142,10 @@ def train(load_models = True):
 
 
 
-def inference(episode=0 ,iters=100):
+def inference(episode=0 ,iters=15, load_models=False):
     # load the model
-    # agent.load_models()
+    if load_models:
+        agent.load_models()
     # inference
     for i in range(iters):
         env = random.choice(envs)
@@ -195,7 +198,7 @@ def inference(episode=0 ,iters=100):
         # plt.savefig(f"tmp/start_pics/start_pic_{i}.png")
         # plt.clf()
         # combine the two plots
-        """
+        
         fig, (ax1, ax2) = plt.subplots(1, 2)
         fig.suptitle('Vertically stacked subplots')
         ax1.plot(rewards)
@@ -204,12 +207,12 @@ def inference(episode=0 ,iters=100):
         ax2.set_title("start environment")
         plt.savefig(f"tmp/combined/combined_{i}.png")
         plt.clf()
-        """
+        
 
 
 def main():
-    train()
-    # inference()
+    # train()
+    inference(load_models=True)
 
 if __name__ == '__main__':
     main()
